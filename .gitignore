@@ -4,6 +4,7 @@ __pycache__/
 dist/
 build/
 *.pyc
+*.egg-info/
 works/
 workspace/temp/
 workspace/**/.DS_Store
