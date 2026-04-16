@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+src/songhelper/__init__.py
+src/songhelper/capabilities.py
+src/songhelper/cli.py
+src/songhelper/project.py
+src/songhelper/workflows.py
+src/songhelper.egg-info/PKG-INFO
+src/songhelper.egg-info/SOURCES.txt
+src/songhelper.egg-info/dependency_links.txt
+src/songhelper.egg-info/entry_points.txt
+src/songhelper.egg-info/top_level.txt
+tests/test_songhelper.py
