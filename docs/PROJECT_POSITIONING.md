@@ -64,13 +64,13 @@
 
 用于承接你当前歌曲项目中的过程文件与结果文件：
 
-- `works/`：原始歌曲素材
-- `workspace/analysis/`：分析结果、报告、特征提取输出
-- `workspace/stems/`：分离后的人声、伴奏、鼓、贝斯等
-- `workspace/scores/`：MIDI、简谱、乐谱草稿
-- `workspace/mixes/`：处理中间版本、rough mix
-- `workspace/exports/`：最终导出物
-- `workspace/notes/`：创作说明、任务记录、人工判断
+- `workspace/<作品名>/source/`：原始歌曲素材
+- `workspace/<作品名>/analysis/`：分析结果、报告、特征提取输出
+- `workspace/<作品名>/stems/`：分离后的人声、伴奏、鼓、贝斯等
+- `workspace/<作品名>/scores/`：MIDI、简谱、乐谱草稿
+- `workspace/<作品名>/mixes/`：处理中间版本、rough mix
+- `workspace/<作品名>/exports/`：最终导出物
+- `workspace/<作品名>/notes/`：创作说明、任务记录、人工判断
 
 ### 4.2 工具箱
 
@@ -195,8 +195,8 @@
 
 你后续只需要直接下达任务，例如：
 
-- “分析 `works/混天绫/混天绫.wav` 的 BPM、调性和段落结构”
-- “给这首歌做人声分离，输出到 `workspace/stems/混天绫/`”
+- “分析 `workspace/混天绫/source/混天绫.wav` 的 BPM、调性和段落结构”
+- “给这首歌做人声分离，输出到 `workspace/混天绫/stems/`”
 - “从分离后的人声提取主旋律，生成 MIDI”
 - “把副歌这一段做两个不同的混响方案”
 - “把这次处理写成可复用脚本，后续别的歌也能直接跑”

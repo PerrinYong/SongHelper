@@ -11,12 +11,12 @@
 - 用工具链辅助音频处理：vocal/instrument 分离、片段裁剪、拼接、响度整理、效果链建议
 - 为后续能力预留接口：旋律转 MIDI/简谱/五线谱、参考曲对比、项目版本归档、批处理流程
 
-## 建议工作流
+## 建议工作方式
 
-1. 把素材放入 `works/<作品名>/`
-2. 在 `workspace/notes/` 记录创作意图、参考曲、风格目标
-3. 用 CLI 查看支持能力：`python -m songhelper.cli capabilities`
-4. 用 CLI 查看创作流程：`python -m songhelper.cli workflow`
+1. 为每首歌使用单独目录：`workspace/<作品名>/`
+2. 原始素材放入 `workspace/<作品名>/source/`
+3. 分析、stems、乐谱、mix、导出物都保存在该歌曲子目录下
+4. 用 CLI 查看支持能力：`python -m songhelper.cli capabilities`
 5. 后续逐步接入具体音频处理脚本与第三方库
 
 ## 工程结构
@@ -24,8 +24,7 @@
 - `docs/`：能力说明、创作流程、后续规划
 - `src/songhelper/`：可扩展 Python 包与 CLI 入口
 - `tests/`：基础测试
-- `workspace/`：分析输出、乐谱、stems、mix、导出物
-- `works/`：你的原始作品素材
+- `workspace/`：按歌曲分目录保存 source、analysis、stems、scores、mixes、exports、notes
 
 ## 工程定位
 
@@ -64,6 +63,6 @@
 - 为具体任务创建或迭代脚本
 - 把工具存放在仓库中便于复用
 - 在 `docs/` 中沉淀工作流与使用说明
-- 在 `workspace/` 中统一管理中间产物和导出结果
+- 在 `workspace/<作品名>/` 中统一管理该歌曲的所有中间产物和导出结果
 - 随着合作推进，逐步扩展为更完整的音乐创作辅助系统
 - 但创作主流程仍由你决定，我只按你的任务指令提供能力与工具支持

@@ -10,7 +10,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from songhelper.capabilities import render_capabilities
-from songhelper.project import ensure_workspace
+from songhelper.project import ensure_song_workspace, ensure_workspace
 from songhelper.workflows import render_workflow
 
 
@@ -29,5 +29,12 @@ def test_render_workflow_contains_expected_step() -> None:
 def test_ensure_workspace_creates_expected_directories(tmp_path: Path) -> None:
     created = ensure_workspace(tmp_path)
     assert created
-    assert (tmp_path / "workspace" / "analysis").exists()
-    assert (tmp_path / "workspace" / "exports").exists()
+    assert (tmp_path / "workspace").exists()
+    assert (tmp_path / "workspace" / "temp").exists()
+
+
+def test_ensure_song_workspace_creates_expected_directories(tmp_path: Path) -> None:
+    created = ensure_song_workspace(tmp_path, "混天绫")
+    assert created
+    assert (tmp_path / "workspace" / "混天绫" / "source").exists()
+    assert (tmp_path / "workspace" / "混天绫" / "scores").exists()

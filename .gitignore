@@ -5,6 +5,4 @@ dist/
 build/
 *.pyc
 *.egg-info/
-works/
-workspace/temp/
-workspace/**/.DS_Store
+workspace/
