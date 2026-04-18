@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from .audio_analysis import save_analysis
+from .audio_probe import save_audio_probe
 from .capabilities import render_capabilities
+from .ffmpeg_tools import REVERB_PRESETS, apply_reverb, concat_audio, normalize_audio
 from .melody_cleanup import save_cleaned_melody
 from .midi_tools import export_midi_to_jianpu
 from .project import ensure_song_workspace, ensure_workspace
-from .transcription import save_transcription
+from .rough_separation import rough_separate
+from .score_render import save_human_jianpu
+from .transcription import NoteEvent, save_transcription
 from .workflows import render_workflow
 
 
@@ -37,6 +42,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     analyze_parser.add_argument("input", help="Input audio path")
     analyze_parser.add_argument("output", help="Output JSON path")
+
+    probe_parser = subparsers.add_parser(
+        "probe-audio", help="Probe metadata and rough musical statistics"
+    )
+    probe_parser.add_argument("input", help="Input audio path")
+    probe_parser.add_argument("output", help="Output JSON path")
+
+    rough_sep_parser = subparsers.add_parser(
+        "rough-separate", help="Run HPSS or center-extraction rough separation"
+    )
+    rough_sep_parser.add_argument("input", help="Input audio path")
+    rough_sep_parser.add_argument("output_dir", help="Output directory")
+    rough_sep_parser.add_argument(
+        "--mode", required=True, choices=["hpss", "center"], help="Rough separation mode"
+    )
 
     transcribe_parser = subparsers.add_parser(
         "transcribe", help="Extract melody and export MIDI/Jianpu"
@@ -86,6 +106,39 @@ def build_parser() -> argparse.ArgumentParser:
         "--max-midi", type=int, default=None, help="Optional hard upper MIDI limit"
     )
 
+    human_jianpu_parser = subparsers.add_parser(
+        "human-jianpu", help="Render cleaned melody as a more readable Jianpu text"
+    )
+    human_jianpu_parser.add_argument("input", help="Input cleaned note JSON path")
+    human_jianpu_parser.add_argument("output", help="Output human-readable Jianpu path")
+    human_jianpu_parser.add_argument("--title", required=True, help="Score title")
+    human_jianpu_parser.add_argument("--meter", default="4/4", help="Meter label")
+    human_jianpu_parser.add_argument("--key", default=None, help="Key label")
+
+    concat_parser = subparsers.add_parser(
+        "concat-audio", help="Concatenate audio clips via ffmpeg"
+    )
+    concat_parser.add_argument("inputs", nargs="+", help="Input audio files in order")
+    concat_parser.add_argument("--output", required=True, help="Output audio path")
+
+    reverb_parser = subparsers.add_parser(
+        "apply-reverb", help="Apply simple ffmpeg reverb preset"
+    )
+    reverb_parser.add_argument("input", help="Input audio path")
+    reverb_parser.add_argument("output", help="Output audio path")
+    reverb_parser.add_argument(
+        "--preset", required=True, choices=sorted(REVERB_PRESETS.keys()), help="Reverb preset"
+    )
+
+    normalize_parser = subparsers.add_parser(
+        "normalize-audio", help="Normalize loudness via ffmpeg loudnorm"
+    )
+    normalize_parser.add_argument("input", help="Input audio path")
+    normalize_parser.add_argument("output", help="Output audio path")
+    normalize_parser.add_argument("--i", type=float, default=-16.0, help="Integrated loudness target")
+    normalize_parser.add_argument("--tp", type=float, default=-1.5, help="True peak target")
+    normalize_parser.add_argument("--lra", type=float, default=11.0, help="Loudness range target")
+
     return parser
 
 
@@ -128,6 +181,23 @@ def main(argv: list[str] | None = None) -> int:
             )
         return 0
 
+    if args.command == "probe-audio":
+        result = save_audio_probe(Path(args.input), Path(args.output))
+        print(f"Tempo estimate: {result['tempo_bpm_estimate']}")
+        print(f"Key estimate: {result['key_estimate']}")
+        print(f"Duration: {result['duration_sec']}")
+        return 0
+
+    if args.command == "rough-separate":
+        written = rough_separate(Path(args.input), Path(args.output_dir), args.mode)
+        for item in written:
+            print(f"Wrote: {item}")
+        if args.mode == "hpss":
+            print("Note: HPSS separates harmonic vs percussive content, not true vocal vs accompaniment.")
+        else:
+            print("Note: Center extraction is a rough stereo trick and may only partially isolate centered vocal.")
+        return 0
+
     if args.command == "transcribe":
         payload = save_transcription(
             Path(args.input),
@@ -161,6 +231,36 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"Cleaned notes: {payload['note_count']}")
         print(f"Cleanup stats: {payload['cleanup']}")
+        return 0
+
+    if args.command == "human-jianpu":
+        payload = json.loads(Path(args.input).read_text(encoding="utf-8"))
+        notes = [NoteEvent(**row) for row in payload["notes"]]
+        text = save_human_jianpu(
+            notes,
+            Path(args.output),
+            tempo=float(payload["tempo"]),
+            title=args.title,
+            meter=args.meter,
+            key=args.key,
+        )
+        print(f"Human-readable Jianpu written to: {args.output}")
+        print(f"Lines: {len(text.splitlines())}")
+        return 0
+
+    if args.command == "concat-audio":
+        concat_audio([Path(item) for item in args.inputs], Path(args.output))
+        print(f"Wrote: {args.output}")
+        return 0
+
+    if args.command == "apply-reverb":
+        apply_reverb(Path(args.input), Path(args.output), args.preset)
+        print(f"Wrote: {args.output}")
+        return 0
+
+    if args.command == "normalize-audio":
+        normalize_audio(Path(args.input), Path(args.output), args.i, args.tp, args.lra)
+        print(f"Wrote: {args.output}")
         return 0
 
     parser.print_help()

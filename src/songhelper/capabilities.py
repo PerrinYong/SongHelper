@@ -15,7 +15,9 @@ CAPABILITY_GROUPS = {
     ],
     "音频处理": [
         "vocal/instrument 分离",
+        "HPSS / 中置声像粗分离",
         "裁剪、拼接、归一化",
+        "ffmpeg 混响预设处理",
         "基础效果链建议",
         "版本导出与整理",
     ],

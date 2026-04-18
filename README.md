@@ -8,7 +8,7 @@
 
 - 用文本和推理协助创作：主题、情绪、歌词、段落结构、hook、和声建议、改编建议
 - 用程序辅助分析：BPM、拍点、调性、和弦候选、段落切分、能量曲线、频谱观察
-- 用工具链辅助音频处理：vocal/instrument 分离、片段裁剪、拼接、响度整理、效果链建议
+- 用工具链辅助音频处理：vocal/instrument 分离、粗分离（HPSS/中置）、片段裁剪、拼接、响度整理、混响与效果链建议
 - 为后续能力预留接口：旋律转 MIDI/简谱/五线谱、参考曲对比、项目版本归档、批处理流程
 
 ## 建议工作方式
@@ -25,6 +25,24 @@
 - `src/songhelper/`：可扩展 Python 包与 CLI 入口
 - `tests/`：基础测试
 - `workspace/`：按歌曲分目录保存 source、analysis、stems、scores、mixes、exports、notes
+
+## 推荐先看的中文文档
+
+- `docs/工程能力手册.md`：统一说明工程定位、底层工具、上层技能与边界
+- `docs/skills/*/SKILL.md`：各高内聚技能的独立说明
+
+## 新增的合并能力（来自 music_agent_workspace）
+
+- 音频基础探测：元数据、BPM 粗估、调性中心、RMS、频谱重心、过零率
+- 粗分离：`hpss` / `center`
+- ffmpeg 工具链：拼接、混响、响度标准化
+- 音乐创作协作 Skill 与任务模板文档
+
+相关文档：
+
+- `docs/MERGED_MUSIC_AGENT_WORKSPACE.md`
+- `docs/MUSIC_CREATION_SKILL.md`
+- `docs/TASK_EXAMPLES.md`
 
 ## 工程定位
 
