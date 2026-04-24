@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MelodySeedCard",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "source",
+    "core_sentence",
+    "emotion_pair",
+    "contour",
+    "rhythm_face",
+    "highest_word",
+    "cadence",
+    "range_hint",
+    "motion_hint",
+    "avoid"
+  ],
+  "properties": {
+    "id": {"type": "string"},
+    "title": {"type": "string"},
+    "source": {"type": "array", "items": {"type": "string"}},
+    "core_sentence": {"type": "string"},
+    "emotion_pair": {"type": "string"},
+    "contour": {"type": "string"},
+    "rhythm_face": {"type": "string"},
+    "highest_word": {"type": "string"},
+    "cadence": {"type": "string"},
+    "range_hint": {"type": "string"},
+    "motion_hint": {"type": "string"},
+    "avoid": {"type": "string"}
+  },
+  "additionalProperties": false
+}

@@ -8,6 +8,20 @@ from .audio_analysis import save_analysis
 from .audio_probe import save_audio_probe
 from .capabilities import render_capabilities
 from .ffmpeg_tools import REVERB_PRESETS, apply_reverb, concat_audio, normalize_audio
+from .lrc_tools import generate_lrc_from_files, transcribe_audio_to_segments
+from .melody_factory.workflow import (
+    build_preview_manifest,
+    export_abc_to_audio,
+    export_abc_to_midi,
+    export_abc_to_musicxml,
+    export_spec_to_abc,
+    export_spec_to_audio,
+    export_spec_to_midi,
+    export_spec_to_musicxml,
+    init_melody_factory,
+    render_notation_to_audio,
+    validate_spec,
+)
 from .melody_cleanup import save_cleaned_melody
 from .midi_tools import export_midi_to_jianpu
 from .project import ensure_song_workspace, ensure_workspace
@@ -139,6 +153,75 @@ def build_parser() -> argparse.ArgumentParser:
     normalize_parser.add_argument("--tp", type=float, default=-1.5, help="True peak target")
     normalize_parser.add_argument("--lra", type=float, default=11.0, help="Loudness range target")
 
+    transcribe_segments_parser = subparsers.add_parser(
+        "transcribe-segments", help="Transcribe audio into Whisper segment JSON"
+    )
+    transcribe_segments_parser.add_argument("input", help="Input audio path")
+    transcribe_segments_parser.add_argument("output", help="Output segments JSON path")
+    transcribe_segments_parser.add_argument("--model", default="base", help="Whisper model name")
+    transcribe_segments_parser.add_argument("--language", default="zh", help="Language hint")
+
+    generate_lrc_parser = subparsers.add_parser(
+        "generate-lrc", help="Generate line-level LRC from lyrics text and segment JSON"
+    )
+    generate_lrc_parser.add_argument("lyrics", help="Lyrics text file path")
+    generate_lrc_parser.add_argument("segments", help="Whisper segments JSON path")
+    generate_lrc_parser.add_argument("output", help="Output LRC path")
+    generate_lrc_parser.add_argument("--title", default=None, help="Song title")
+    generate_lrc_parser.add_argument("--artist", default=None, help="Artist")
+    generate_lrc_parser.add_argument("--album", default=None, help="Album")
+
+    melody_factory_parser = subparsers.add_parser(
+        "melody-factory", help="Technical workflow for melody spec, ABC, MIDI, and audio"
+    )
+    melody_factory_subparsers = melody_factory_parser.add_subparsers(dest="melody_factory_command")
+
+    mf_init = melody_factory_subparsers.add_parser("init", help="Initialize melody_factory workspace for one song")
+    mf_init.add_argument("song_name", help="Song directory name")
+    mf_init.add_argument("--root", default=".", help="Project root")
+
+    mf_spec_to_abc = melody_factory_subparsers.add_parser("spec-to-abc", help="Convert MelodySpec JSON to ABC")
+    mf_spec_to_abc.add_argument("input", help="Input MelodySpec JSON path")
+    mf_spec_to_abc.add_argument("output", help="Output ABC path")
+
+    mf_spec_to_midi = melody_factory_subparsers.add_parser("spec-to-midi", help="Convert MelodySpec JSON to MIDI")
+    mf_spec_to_midi.add_argument("input", help="Input MelodySpec JSON path")
+    mf_spec_to_midi.add_argument("output", help="Output MIDI path")
+
+    mf_validate = melody_factory_subparsers.add_parser("validate", help="Validate MelodySpec JSON and output report")
+    mf_validate.add_argument("input", help="Input MelodySpec JSON path")
+    mf_validate.add_argument("output", nargs="?", default=None, help="Optional output validation report JSON path")
+
+    mf_spec_to_musicxml = melody_factory_subparsers.add_parser("spec-to-musicxml", help="Convert MelodySpec JSON to MusicXML")
+    mf_spec_to_musicxml.add_argument("input", help="Input MelodySpec JSON path")
+    mf_spec_to_musicxml.add_argument("output", help="Output MusicXML path")
+
+    mf_spec_to_audio = melody_factory_subparsers.add_parser("spec-to-audio", help="Convert MelodySpec JSON to WAV preview")
+    mf_spec_to_audio.add_argument("input", help="Input MelodySpec JSON path")
+    mf_spec_to_audio.add_argument("output", help="Output WAV path")
+
+    mf_abc_to_midi = melody_factory_subparsers.add_parser("abc-to-midi", help="Convert ABC to MIDI")
+    mf_abc_to_midi.add_argument("input", help="Input ABC path")
+    mf_abc_to_midi.add_argument("output", help="Output MIDI path")
+
+    mf_abc_to_audio = melody_factory_subparsers.add_parser("abc-to-audio", help="Convert ABC to WAV preview")
+    mf_abc_to_audio.add_argument("input", help="Input ABC path")
+    mf_abc_to_audio.add_argument("output", help="Output WAV path")
+
+    mf_abc_to_musicxml = melody_factory_subparsers.add_parser("abc-to-musicxml", help="Convert ABC to MusicXML")
+    mf_abc_to_musicxml.add_argument("input", help="Input ABC path")
+    mf_abc_to_musicxml.add_argument("output", help="Output MusicXML path")
+
+    mf_render_audio = melody_factory_subparsers.add_parser("render-audio", help="Render MIDI or MusicXML to audio via MuseScore CLI")
+    mf_render_audio.add_argument("input", help="Input MIDI or MusicXML path")
+    mf_render_audio.add_argument("output", help="Output audio path")
+    mf_render_audio.add_argument("--musescore", default=None, help="Optional MuseScore executable path")
+
+    mf_preview_manifest = melody_factory_subparsers.add_parser("preview-manifest", help="Build preview manifest for one song")
+    mf_preview_manifest.add_argument("song_name", help="Song directory name")
+    mf_preview_manifest.add_argument("--root", default=".", help="Project root")
+    mf_preview_manifest.add_argument("--output", default=None, help="Optional output manifest path")
+
     return parser
 
 
@@ -261,6 +344,76 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "normalize-audio":
         normalize_audio(Path(args.input), Path(args.output), args.i, args.tp, args.lra)
         print(f"Wrote: {args.output}")
+        return 0
+
+    if args.command == "transcribe-segments":
+        payload = transcribe_audio_to_segments(
+            Path(args.input), Path(args.output), model_name=args.model, language=args.language
+        )
+        print(f"Segments: {len(payload['segments'])}")
+        print(f"Wrote: {args.output}")
+        return 0
+
+    if args.command == "generate-lrc":
+        generate_lrc_from_files(
+            Path(args.lyrics),
+            Path(args.segments),
+            Path(args.output),
+            title=args.title,
+            artist=args.artist,
+            album=args.album,
+        )
+        print(f"Wrote: {args.output}")
+        return 0
+
+    if args.command == "melody-factory":
+        if args.melody_factory_command == "init":
+            created = init_melody_factory(Path(args.root).resolve(), args.song_name)
+            for item in created:
+                print(f"- {item}")
+            return 0
+        if args.melody_factory_command == "spec-to-abc":
+            export_spec_to_abc(Path(args.input), Path(args.output))
+            print(f"Wrote: {args.output}")
+            return 0
+        if args.melody_factory_command == "spec-to-midi":
+            export_spec_to_midi(Path(args.input), Path(args.output))
+            print(f"Wrote: {args.output}")
+            return 0
+        if args.melody_factory_command == "validate":
+            report = validate_spec(Path(args.input), Path(args.output) if args.output else None)
+            print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+            return 0
+        if args.melody_factory_command == "spec-to-musicxml":
+            export_spec_to_musicxml(Path(args.input), Path(args.output))
+            print(f"Wrote: {args.output}")
+            return 0
+        if args.melody_factory_command == "spec-to-audio":
+            export_spec_to_audio(Path(args.input), Path(args.output))
+            print(f"Wrote: {args.output}")
+            return 0
+        if args.melody_factory_command == "abc-to-midi":
+            export_abc_to_midi(Path(args.input), Path(args.output))
+            print(f"Wrote: {args.output}")
+            return 0
+        if args.melody_factory_command == "abc-to-audio":
+            export_abc_to_audio(Path(args.input), Path(args.output))
+            print(f"Wrote: {args.output}")
+            return 0
+        if args.melody_factory_command == "abc-to-musicxml":
+            export_abc_to_musicxml(Path(args.input), Path(args.output))
+            print(f"Wrote: {args.output}")
+            return 0
+        if args.melody_factory_command == "render-audio":
+            render_notation_to_audio(Path(args.input), Path(args.output), args.musescore)
+            print(f"Wrote: {args.output}")
+            return 0
+        if args.melody_factory_command == "preview-manifest":
+            song_root = Path(args.root).resolve() / "workspace" / args.song_name
+            manifest = build_preview_manifest(song_root, Path(args.output) if args.output else None)
+            print(json.dumps(manifest, ensure_ascii=False, indent=2))
+            return 0
+        parser.print_help()
         return 0
 
     parser.print_help()

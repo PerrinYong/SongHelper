@@ -9,6 +9,7 @@
 - 用文本和推理协助创作：主题、情绪、歌词、段落结构、hook、和声建议、改编建议
 - 用程序辅助分析：BPM、拍点、调性、和弦候选、段落切分、能量曲线、频谱观察
 - 用工具链辅助音频处理：vocal/instrument 分离、粗分离（HPSS/中置）、片段裁剪、拼接、响度整理、混响与效果链建议
+- 用工具链辅助歌词与时间轴处理：Whisper 分段转写、行级 LRC 生成
 - 为后续能力预留接口：旋律转 MIDI/简谱/五线谱、参考曲对比、项目版本归档、批处理流程
 
 ## 建议工作方式
@@ -30,6 +31,36 @@
 
 - `docs/工程能力手册.md`：统一说明工程定位、底层工具、上层技能与边界
 - `docs/skills/*/SKILL.md`：各高内聚技能的独立说明
+
+## 新增模块：`melody_factory`
+
+当前工程已新增一个独立模块：
+
+- `src/songhelper/melody_factory/`
+
+它用于承载“AI Agent 协助的主旋律创作方法”中的**技术链路**，当前只负责：
+
+- `MelodySpec JSON -> ABC`
+- `MelodySpec JSON -> MIDI`
+- `MelodySpec JSON -> MusicXML`
+- `MelodySpec JSON -> WAV`
+- `ABC -> MIDI`
+- `ABC -> MusicXML`
+- `ABC -> WAV`
+- 为单首歌初始化 `melody_factory` 工作目录
+- 生成 preview manifest 与模板资产
+
+当前明确**不**负责：
+
+- 灵感种子卡自动生成
+- LLM 主动发明 hook
+- 自动旋律相似度判断
+
+模块内文档：
+
+- `src/songhelper/melody_factory/README.md`
+- `src/songhelper/melody_factory/SKILL.md`
+- `src/songhelper/melody_factory/ARCHITECTURE.md`
 
 ## 新增的合并能力（来自 music_agent_workspace）
 
